@@ -1,5 +1,7 @@
 
 #define Service_FilterManagerInstalled 0x87
 
+#ifndef Filter_RegisterIconBorderFilter
 #define Filter_RegisterIconBorderFilter   (0x4264C)
 #define Filter_DeRegisterIconBorderFilter (0x4264D)
+#endif
