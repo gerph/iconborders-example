@@ -1,0 +1,72 @@
+/*******************************************************************
+ * File:     testborder
+ * Purpose:  Testing that the border routine works
+ * Author:   Justin Fletcher
+ * Date:     08 Nov 2002
+ ******************************************************************/
+
+#include <stdlib.h>
+#include <stdio.h>
+#include "borders.h"
+#include "swis.h"
+
+#define HEIGHT 48*3
+#define WIDTH  128*3
+
+/* Dithering flags */
+int dither = DITHER_BACKGROUND;
+
+int main(void)
+{
+  int i;
+  int alt;
+
+  printf("Plotting...\n");
+
+  /* We draw each of the buttons, going up the screen, and beside them
+     we draw button with the 'selected' bit set, forcing the button to
+     be pressed. The only buttons this has an effect for should be types
+     5 and 6 (action and default). */
+
+  for (alt=0; alt<2; alt++)
+  {
+    for (i=1; i<=7; i++)
+    {
+      /* We set up the environment that the Wimp would give us */
+      colours_t cols[6];
+      bbox_t fillbox;
+      bbox_t box;
+      cols[COLOUR_FG]  =0x00000000;
+      cols[COLOUR_BG]  =(i==7) ? 0xFFFFFF00 : 0xDDDDDD00;
+      cols[COLOUR_WELL]=(i==6) ? 0xBAEEEE00 : 0xDDDDDD00;
+      cols[COLOUR_FACE]=0xFFFFFF00;
+      cols[COLOUR_OPP] =(i==3 || i==4) ? 0xBABABA00 : 0x73737300;
+      box.x0=640 + alt*(WIDTH+32);
+      box.y0=128+(HEIGHT+32)*(i-1);
+      box.x1=box.x0+WIDTH;
+      box.y1=box.y0+HEIGHT;
+      box.dx=1;
+      box.dy=1;
+      box.dx_1=box.dx-1;
+      box.dy_1=box.dy-1;
+
+      fillbox=box;
+
+      /* Grey background to see our buttons against */
+      _swix(ColourTrans_SetGCOL,_IN(0)|_INR(3,4),0xDDDDDD00,0,0);
+      _swix(OS_Plot,_INR(0,2),4,   box.x0-16,box.y0-16);
+      _swix(OS_Plot,_INR(0,2),96+5,box.x1+16,box.y1+16);
+
+      border_colour(i, alt==1 ? (1<<21) : 0, &fillbox, cols, 0xDDDDDD00);
+      _swix(ColourTrans_SetGCOL,_IN(0)|_INR(3,4),
+                    cols[COLOUR_BG],
+                    (1<<7) | ((dither & DITHER_BACKGROUND) ? (1<<8) : 0),
+                    0);
+      border_fill(i, alt==1 ? (1<<21) : 0, &fillbox, cols, dither);
+      border_draw(i, alt==1 ? (1<<21) : 0, &box, cols, dither);
+    }
+  }
+
+  getc(stdin);
+  return 1;
+}

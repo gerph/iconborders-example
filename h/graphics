@@ -1,0 +1,70 @@
+/*******************************************************************
+ * File:     graphics
+ * Purpose:  Graphics primitives
+ * Author:   Justin Fletcher
+ * Date:     09 Nov 2002
+ ******************************************************************/
+
+#ifndef GRAPHICS_H
+#define GRAPHICS_H
+
+#include "swis.h"
+
+#define move(x,y)            _swix(OS_Plot, _INR(0,2),4,x,y)
+#define draw(x,y)            _swix(OS_Plot, _INR(0,2),5,x,y)
+#define draw_noendpoint(x,y) _swix(OS_Plot, _INR(0,2),0x25,x,y)
+
+/*************************************************** Gerph *********
+ Function:     gcol
+ Description:  Set graphics colour
+ Parameters:   col = colour
+ Returns:      none
+ ******************************************************************/
+void gcol(unsigned long col);
+
+/*************************************************** Gerph *********
+ Function:     point
+ Description:  plot a point
+ Parameters:   x,y = point
+ Returns:      none
+ ******************************************************************/
+void point(int x,int y);
+
+/*************************************************** Gerph *********
+ Function:     line
+ Description:  Draw a line
+ Parameters:   x0,y0 = start
+               x1,y1 = end
+ Returns:      none
+ ******************************************************************/
+void line(int x0,int y0,int x1,int y1);
+
+/*************************************************** Gerph *********
+ Function:     rect
+ Description:  Filled rectangle
+ Parameters:   x0,y0 = one corner
+               x1,y1 = the other
+ Returns:      none
+ ******************************************************************/
+void rect(int x0,int y0,int x1,int y1);
+
+/*************************************************** Gerph *********
+ Function:     rect_bg
+ Description:  Filled rectangle using background colour
+ Parameters:   x0,y0 = one corner
+               x1,y1 = the other
+ Returns:      none
+ ******************************************************************/
+void rect_bg(int x0,int y0,int x1,int y1);
+
+/*************************************************** Gerph *********
+ Function:     sector
+ Description:  Filled sector
+ Parameters:   x0,y0 = centre
+               x1,y1 = first point
+               x2,y2 = second point
+ Returns:      none
+ ******************************************************************/
+void sector_bg(int x0,int y0,int x1,int y1,int x2,int y2);
+
+#endif

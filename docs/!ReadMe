@@ -1,0 +1,110 @@
+!ReadMe for IconBorderExample
+=============================
+
+Introduction
+------------
+The source contained here should contain sufficient example code to allow
+the writing of IconBorder replacements. The source itself does not document
+RISC OS interfaces, nor does it provide a good guide to writing usable
+code. It may be used as the basis for future icon border modules without
+any restrictions.
+
+
+Contents
+--------
+The example consists of two parts - a standalone version, and a module
+plugin. The standalone version can be used to test the button interfaces
+in a rudimentary and (importantly) non-destructive manner. The standalone
+version runs as a normal absolute program and has a small test harness to
+invoke the border routines.
+
+The plugin module will register itself with the Filter Manager, should a
+suitable version be present, and will replace border types 5 and 6 (action
+and default buttons) rendering with that provided by the main border code.
+
+
+Building the standalone
+-----------------------
+Running the !Mk script will compile and link the standalone border test
+harness. The test hardness itself is c.testborders and may be modified to
+suit the particular test conditions the user requires. The default behaviour
+is to draw all 7 border variants and their 'selected' states. As this
+example only handles type 5 and 6 borders, only these will be rendered.
+
+Once built, the test absolute can be found in the aif directory. Running
+this test will display the border variants. 
+
+
+Building the module
+-------------------
+Running the !MkMod script will compile and link the module icon border
+plugin. The code which provides the module veneers and interfaces can be
+found in c.veneer (and cmhg.header which provides the raw module veneer).
+The veneer code will need modifying if you wish to only register filters
+on a *Command or other trigger. The default behaviour is to register the
+filter on being loaded.
+
+Once built, the module can be found in the rm directory. Running this
+module will cause it to replace the standard icon border rendering for
+if a suitable WindowManager has been installed. The default implementation
+provided is identical to that provided by the WindowManager and no
+difference will therefore be visible. Within the border and colour code,
+examples have been commented providing visible changes to the behaviour
+of the icons.
+
+The module and absolute code are built into different object files because
+they require different methods of data access to variables.
+
+
+Anatomy (source files)
+----------------------
+c.graphics/h.graphics:
+   These files provide simple graphic primitives which can be called by
+   the borders file or test harness.
+c.borders/h.borders:
+   These files provide the actual border processing and rendering code.
+   It is here that code should be modified if you wish to change the
+   rendering of borders.
+   Commented sections of code give example changes that might be made
+   which elicit obvious, although not useful, changes in the appearance
+   of buttons.
+c.testborders:
+   This is a test harness that will invoke the functions in c.borders
+   to render the borders in a simple manner.
+c.veneer:
+   Provides a veneer between the CMHG veneer and the routines provided
+   in c.borders. The veneers themselves are pretty much self contained
+   and will need no work.
+
+
+Caveats
+-------
+This code is provided as an example. Understand what it does and why it
+does it. Modify and use at your own risk.
+
+
+Guidelines
+----------
+As can be observed with the rounded borders module (from which this example
+code was derived), significant changes to the 'shape' of the border can
+result in graphical problems with certain interface designs relying on the
+original shape of the borders. Whilst designs should not be limited to being
+identical to the original buttons (which would obviously defeat the
+purpose), they should attempt to minimise the effects of different shapes
+where possible.
+
+Although it is possible to completely replace the colour schemes defined by
+the application for the borders through the use of the colour entry point,
+it is recommended that changes to the colours be made with care. In
+particular, designers should be aware that the background of the window on
+which the buttons appear may not be grey 1, and that the text and background
+for the icon may not be the standard grey 1/black. Again, care should be
+taken to minimise the effects of such changes.
+
+
+Outstanding issues
+------------------
+ * No documentation is provided for the actual API.
+ * Documentation therefore of the requirements of each entry point is
+   non-existant.
+ * Code still references Gerph/Justin Fletcher; needs changing.

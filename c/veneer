@@ -1,0 +1,204 @@
+/*******************************************************************
+ * File:     veneer
+ * Purpose:  A simple veneer for the border module
+ * Author:   Justin Fletcher
+ * Date:     09 Nov 2002
+ ******************************************************************/
+
+#include <stdlib.h>
+#include "swis.h"
+#include "borders.h"
+#include "header.h"
+
+#define Service_FilterManagerInstalled    (0x87)
+#define Filter_RegisterIconBorderFilter   (0x4264C)
+#define Filter_DeRegisterIconBorderFilter (0x4264D)
+
+static enum {
+  s_idle,   /* We're waiting to register */
+  s_active, /* We're active */
+  s_dead    /* We cannot be exited because something went wrong */
+} State = s_idle;
+
+/*************************************************** Gerph *********
+ Function:     Register_Filters
+ Description:  Register our filters
+ Parameters:   pw-> the private word we use
+ Returns:      pointer to error, or NULL if none
+ ******************************************************************/
+_kernel_oserror *Register_Filters(void *pw)
+{
+  _kernel_oserror *err;
+
+  /* When the filters are registered, the mask word supplied contains
+     one bit to mask each of the button types. The filter will be called
+     if the button type specified has a bit set. In our example, we only
+     ever handle types 5 and 6 - actual pressable buttons. */
+  err = _swix(Filter_RegisterIconBorderFilter, _INR(0,3),
+                                               "Example",
+                                               border_entry, pw,
+                                               (1<<5) | (1<<6));
+  if (err)
+  {
+    State = s_idle;
+    return NULL;
+  }
+  State = s_active;
+  return NULL;
+}
+
+/*************************************************** Gerph *********
+ Function:     Unregister_Filters
+ Description:  Deregister our filters if necessary
+ Parameters:   pw-> our private word
+ Returns:      pointer to error, or NULL if none
+ ******************************************************************/
+_kernel_oserror *Unregister_Filters(void *pw)
+{
+  _kernel_oserror *err;
+  if (State == s_active)
+  {
+    /* Restore to default */
+    err = _swix(Filter_DeRegisterIconBorderFilter, _INR(0,2),
+                                                   "Example",
+                                                   border_entry, pw);
+    if (err)
+    {
+      State=s_dead;
+      return err;
+    }
+  }
+  State = s_idle;
+  return NULL;
+}
+
+/***************************************************************************
+ * Function:     Mod_Init
+ * Description:  Initialise the module, setting up vectors, callbacks and
+ *               any other parts of the system necessary for the module to
+ *               function.
+ * Parameters:   tail        = pointer to command line (control terminated)
+ *               podule_base = address of podule module was started from, or
+ *                             NULL if none
+ *               pw          = private word for module
+ * On exit:      Return NULL for successful initialisation, or a pointer to
+ *               an error block if the module could not start properly.
+ **************************************************************************/
+_kernel_oserror *Mod_Init(const char *tail, int podule_base, void *pw)
+{
+  _kernel_oserror *err;
+  err = Register_Filters(pw);
+  return err;
+}
+
+
+/***************************************************************************
+ * Function:     Mod_Final
+ * Description:  Finalise the module, shutting down any systems necessary,
+ *               freeing vectors and releasing workspace
+ * Parameters:   fatal       = fatality indicator; 1 if fatal, 0 if
+ *                             reinitialising
+ *               podule_base = address of podule module was started from, or
+ *                             NULL if none
+ *               pw          = private word for module
+ * On exit:      Return 0 for successful finalisation, or a pointer to an
+ *               error block if module was not shutdown properly.
+ **************************************************************************/
+_kernel_oserror *Mod_Final(int fatal, int podule_base, void *pw)
+{
+  _kernel_oserror *err;
+  err = Unregister_Filters(pw);
+  return NULL;
+}
+
+
+/***************************************************************************
+ * Function:     Mod_Service
+ * Description:  Service call handler routine. All services which are being
+ *               received by the module will be passed to this routine.
+ * Parameters:   service = service call number
+ *               r       = pointer to register block on entry
+ *               pw      = private word for module
+ * On exit:      Update register values on return by updating r.
+ **************************************************************************/
+void Mod_Service(int service, _kernel_swi_regs *r, void *pw)
+{
+  switch (service)
+  {
+    case Service_FilterManagerInstalled:
+      if (State == s_active)
+      {
+        Unregister_Filters(pw);
+        Register_Filters(pw);
+      }
+      break;
+  }
+}
+
+
+/***************************************************************************
+ * Function:     border_handler
+ * Description:  Generic handler function
+ * Parameters:   r  = pointer to register block on entry
+ *               pw = private word for module
+ * On exit:      Update r to alter return values
+ *               Return NULL to return with V clear
+ *               Return an error pointer to set V and r0
+ **************************************************************************/
+_kernel_oserror *border_handler(_kernel_swi_regs *r, void *pw)
+{
+  switch (r->r[9])
+  {
+    case 0: /* Draw */
+      {
+        int bordertype = r->r[0];
+        unsigned long iconflags = r->r[1];
+        bbox_t *box = (bbox_t *)r->r[2];
+        colours_t *cols = (colours_t *)r->r[3];
+        unsigned long ditherflags = r->r[4];
+        if (border_draw(bordertype,iconflags,box,cols,ditherflags))
+          r->r[9]=-1; /* Claim */
+        return NULL;
+      }
+      break;
+
+    case 1: /* Size */
+      {
+        int bordertype = r->r[0];
+        unsigned long iconflags = r->r[1];
+        bbox_t *box = (bbox_t *)r->r[2];
+        if (border_size(bordertype,iconflags,box))
+          r->r[9]=-1; /* Claim */
+        return NULL;
+      }
+      break;
+
+    case 2: /* Fill */
+      {
+        int bordertype = r->r[0];
+        unsigned long iconflags = r->r[1];
+        bbox_t *box = (bbox_t *)r->r[2];
+        colours_t *cols = (colours_t *)r->r[3];
+        unsigned long ditherflags = r->r[4];
+        if (border_fill(bordertype,iconflags,box,cols,ditherflags))
+          r->r[9]=-1; /* Claim */
+        return NULL;
+      }
+      break;
+
+    case 3: /* Colour */
+      {
+        int bordertype = r->r[0];
+        unsigned long iconflags = r->r[1];
+        bbox_t *box = (bbox_t *)r->r[2];
+        colours_t *cols = (colours_t *)r->r[3];
+        unsigned long background = r->r[4];
+        if (border_colour(bordertype,iconflags,box,cols,background))
+          r->r[9]=-1; /* Claim */
+        return NULL;
+      }
+      break;
+  }
+  /* Didn't understand it; do nothing */
+  return NULL;
+}

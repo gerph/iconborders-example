@@ -1,0 +1,390 @@
+/*******************************************************************
+ * File:     borders
+ * Purpose:  Drawing borders
+ * Author:   Justin Fletcher
+ * Date:     08 Nov 2002
+ ******************************************************************/
+
+#include <string.h>
+#include "swis.h"
+#include "borders.h"
+#include "graphics.h"
+
+/* We use a number of structures to declare the 'shape' of the buttons
+   we're going to plot. The structure describes the 4 colours that the
+   edges of the button will have as indices into the colours array.
+   The wide of the border is given in OS units.
+   The borders which are plotted are listed from outside towards the
+   inside, allowing the borders to be multiple layers.
+ */
+typedef struct border_s {
+  char edge[4];
+  char width;
+} border_t;
+
+#define END { 0,0,0,0 }, 255
+
+border_t button_slabout[] = {
+  { { COLOUR_FACE, COLOUR_FACE, COLOUR_OPP, COLOUR_OPP }, 4 },
+  { END }
+};
+
+border_t button_slabin[] = {
+  { { COLOUR_OPP, COLOUR_OPP, COLOUR_FACE, COLOUR_FACE }, 4 },
+  { END }
+};
+
+#define button_action_on  button_slabin
+#define button_action_off button_slabout
+
+border_t button_editable[] = {
+  { { COLOUR_OPP, COLOUR_OPP, COLOUR_FACE, COLOUR_FACE }, 4 },
+  { { COLOUR_WELL, COLOUR_WELL, COLOUR_WELL, COLOUR_WELL }, 4 },
+  { { COLOUR_FG, COLOUR_FG, COLOUR_FG, COLOUR_FG }, 1 },
+  { END }
+};
+
+border_t button_ridge[] = {
+  { { COLOUR_FACE, COLOUR_FACE, COLOUR_OPP, COLOUR_OPP }, 4 },
+  { { COLOUR_OPP, COLOUR_OPP, COLOUR_FACE, COLOUR_FACE }, 4 },
+  { END }
+};
+
+border_t button_channel[] = {
+  { { COLOUR_OPP, COLOUR_OPP, COLOUR_FACE, COLOUR_FACE }, 4 },
+  { { COLOUR_FACE, COLOUR_FACE, COLOUR_OPP, COLOUR_OPP }, 4 },
+  { END }
+};
+
+border_t button_default_off[] = {
+  { { COLOUR_OPP, COLOUR_OPP, COLOUR_FACE, COLOUR_FACE }, 4 },
+  { { COLOUR_WELL, COLOUR_WELL, COLOUR_WELL, COLOUR_WELL }, 4 },
+  { { COLOUR_FACE, COLOUR_FACE, COLOUR_OPP, COLOUR_OPP }, 4 },
+  { END }
+};
+
+border_t button_default_on[] = {
+  { { COLOUR_OPP, COLOUR_OPP, COLOUR_FACE, COLOUR_FACE }, 4 },
+  { { COLOUR_WELL, COLOUR_WELL, COLOUR_WELL, COLOUR_WELL }, 4 },
+  { { COLOUR_OPP, COLOUR_OPP, COLOUR_FACE, COLOUR_FACE }, 4 },
+  { END }
+};
+
+/* Although the above definitions are provided for all the button types,
+   we only request button types 5 and 6 in the mask word when we
+   register. */
+
+
+/*************************************************** Gerph *********
+ Function:     rectoutline
+ Description:  Draw a rectangle outline using the colours given
+ Parameters:   indices-> 4 bytes that describe the colours to use
+               box-> the box to draw a rectangle around
+               colours-> the colours to use for the indices
+ Returns:      none
+ ******************************************************************/
+static void rectoutline(char *indices, bbox_t *box, colours_t *cols)
+{
+  move(box->x1,box->y1);
+  gcol(cols[indices[0]]);
+  draw_noendpoint(box->x0,box->y1); /* top */
+  gcol(cols[indices[1]]);
+  draw_noendpoint(box->x0,box->y0); /* left */
+  gcol(cols[indices[2]]);
+  draw_noendpoint(box->x1,box->y0); /* bottom */
+  gcol(cols[indices[3]]);
+  draw_noendpoint(box->x1,box->y1); /* right */
+}
+
+/*************************************************** Gerph *********
+ Function:     getbordertype
+ Description:  Return the border pointer for the parameters given
+ Parameters:   type = border type
+               flags = icon flags
+               box-> the bounding box
+ Returns:      pointer to border, or NULL if a 'normal' border
+ ******************************************************************/
+static border_t *getbordertype(int type, unsigned long flags, bbox_t *box)
+{
+  border_t *border;
+  switch (type)
+  {
+    case 1: border = button_slabout; break;
+    case 2: border = button_slabin; break;
+    case 3: border = button_ridge; break;
+    case 4: border = button_channel; break;
+    case 5: if (flags & (1<<21) ) border = button_action_on;
+            else                  border = button_action_off;
+            break;
+    case 6: if (flags & (1<<21) ) border = button_default_on;
+            else                  border = button_default_off;
+            break;
+    case 7: border = button_editable; break;
+    default:
+      border=NULL;
+  }
+  return border;
+}
+
+/*************************************************** Gerph *********
+ Function:     border_draw
+ Description:  Draw a border
+ Parameters:   type = button type
+               flags = button flags
+               box-> the bounding box to use
+               colours-> the colours we're using
+               ditherflags = flags to use for dithering
+ Returns:      1 if we handled it, 0 if not
+ ******************************************************************/
+int border_draw(int type, unsigned long flags,
+                bbox_t *box, colours_t *colours,
+                unsigned long ditherflags)
+{
+  border_t *border;
+  int mind = (box->dx < box->dy) ? box->dx : box->dy;
+  /* mind contains the minimum of dx and dy so that when drawing the
+     rectangle, the shape will have no gaps in the current mode. */
+
+  /* We handle every button that gets thrown at us */
+
+  /* Snapcoords */
+  box->x0 = box->x0 & ~box->dx_1;
+  box->x1 = box->x1 & ~box->dx_1;
+  box->y0 = box->y0 & ~box->dy_1;
+  box->y1 = box->y1 & ~box->dy_1;
+
+  box->y1 -= 1;
+  box->x1 -= 1;
+
+  border = getbordertype(type,flags,box);
+  if (border==NULL)
+  {
+    /* Although we do not worry about it here, you may wish to obey
+       the dithering flags which the user has configured when drawing
+       the outline. Because this example aims to be simple, it is
+       ignored here. */
+    gcol(colours[COLOUR_FG]);
+    move(box->x0,box->y0);
+    draw(box->x1,box->y0);
+    draw(box->x1,box->y1);
+    draw(box->x0,box->y1);
+    draw(box->x0,box->y0);
+
+    box->y1 += 1;
+    box->x1 += 1;
+    return 1;
+  }
+
+  while (border->width != 255)
+  {
+    int width;
+    for (width = border->width; width>0; width-=mind)
+    {
+      rectoutline(border->edge, box, colours);
+      box->x0+=mind;
+      box->y0+=mind;
+      box->x1-=mind;
+      box->y1-=mind;
+    }
+    border++;
+  }
+
+  box->y1 += 1;
+  box->x1 += 1;
+  return 1;
+}
+
+/*************************************************** Gerph *********
+ Function:     blendrect
+ Description:  Filled rectangle using two colours
+ Parameters:   x0,y0 = one corner
+               x1,y1 = the other
+               dy = the y step
+               start = the start colour
+               end = the end colour
+ Returns:      none
+ ******************************************************************/
+static void blendrect(int x0,int y0,int x1,int y1, int dy,
+                      unsigned long start, unsigned long end)
+{
+  int y;
+  int range;
+  range = y1-y0;
+  if (range<=0)
+    return;
+  for (y=y1; y>=y0; y-=dy)
+  {
+    int f = (y-y0)*255 / range;
+    unsigned long col1 = ((((start>>8) & 0x00FF00FF) * f) & 0xFF00FF00) +
+                         ((((start & 0x00FF0000) * f)>>8) & 0x00FF0000);
+    unsigned long col2 = ((((end>>8) & 0x00FF00FF) * (255-f)) & 0xFF00FF00) +
+                         ((((end & 0x00FF0000) * (255-f))>>8) & 0x00FF0000);
+    gcol(col1+col2);
+    line(x0,y,x1,y);
+  }
+}
+
+/*************************************************** Gerph *********
+ Function:     border_fill
+ Description:  Fill the inner section of a bordered region
+ Parameters:   type = button type
+               flags = button flags
+               box-> the bounding box to use
+               colours-> the colours in use
+ Returns:      1 if handled, 0 if not handled
+ ******************************************************************/
+int border_fill(int type, unsigned long flags, bbox_t *box,
+                colours_t *colours, unsigned long ditherflags)
+{
+  border_t *border;
+  int x0,y0,x1,y1;
+
+  /* Snapcoords */
+  x0 = box->x0 & ~box->dx_1;
+  x1 = box->x1 & ~box->dx_1;
+  y0 = box->y0 & ~box->dy_1;
+  y1 = box->y1 & ~box->dy_1;
+
+  y1 -= 1;
+  x1 -= 1;
+
+  /* The background colour has already been set up, so any plotting should
+     be in relation to the background colour, unless you're going to use
+     your own colours. */
+  border = getbordertype(type,flags,box);
+  if (border==NULL)
+  {
+    rect_bg(x0,y0,x1,y1);
+    return 1;
+  }
+
+  while (border->width != 255)
+  {
+    x0+=border->width;
+    y0+=border->width;
+    x1-=border->width;
+    y1-=border->width;
+    border++;
+  }
+
+  /* If you were using your own colours, rather than the background colour
+     of the icon (which has been set by the Wimp) you would select and
+     draw the background here. If you select other colours you would also
+     have to pay attention to the dithering flags. */
+
+  /* Now draw the rectangle background */
+  rect_bg(x0,y0,x1,y1);
+  /* Or try this :
+
+  // Do note that this does not take account of the background
+  // colour. The round border code merges the colours of the
+  // edges with the background colour. You may wish to do the
+  // same (see commented sections).
+  unsigned long top,bottom;
+  //unsigned long mask = 0x7f7f7f00;
+  //unsigned long col=(colours[COLOUR_BG]>>1) & mask;
+
+  border--;
+  top = colours[border->edge[0]];
+  bottom = colours[border->edge[2]];
+
+  //top=((top>>1) & mask)+col;
+  //bottom=((bottom>>1) & mask)+col;
+  blendrect(x0,y0,x1,y1,box->dy, top, bottom);
+
+  // */
+
+  return 1;
+}
+
+
+/*************************************************** Gerph *********
+ Function:     border_colour
+ Description:  Set up the colour block with the correct colours
+ Parameters:   type = button type
+               flags = icon flags
+               box-> bounding box
+               cols-> the colour block to update
+               background = window background colour
+ Returns:      1 if handled, 0 if not
+ ******************************************************************/
+int border_colour(int type, unsigned long flags, bbox_t *box,
+                  colours_t *cols, unsigned long background)
+{
+  /* We do not modify the colours.
+     Try this :
+
+  if (type==5)
+  {
+    cols[COLOUR_BG]   = 0xFFBB0000; // Light blue background
+    return 1;
+  }
+
+  // */
+
+  /* Note that we do not need to handle shaded icons here. Any
+     colours which are set up here will be faded to the background
+     by the Wimp after this routine returns. */
+
+  /* If we don't handle it, we pass it on and someone else can
+     modify the colours. */
+  return 0;
+}
+
+/*************************************************** Gerph *********
+ Function:     border_size
+ Description:  Return the size of a border
+ Parameters:   type = button type
+               flags = button flags
+               box-> the bounding box to use
+ Returns:      1 if handled, 0 if not
+ ******************************************************************/
+int border_size(int type, unsigned long flags, bbox_t *box)
+{
+  border_t *border;
+
+  /* We need to return the size of the box, once the border has been
+     applied. This is used to position text within the remaining space
+     in the icon. Remember that certain clients will expect particular
+     space to remain, but you can get away with quite a lot here.
+     In particular, if you wanted to make one edge larger than another,
+     this would be possible.
+
+     Providing differently sized icons for shaded or selected icons
+     should be reasonable, but this may provoke odd effects if clients
+     do not expect this.
+   */
+
+  border=getbordertype(type,flags,box);
+  if (border==NULL)
+  {
+    box->x0+=box->dx;
+    box->y0+=box->dy;
+    box->x1-=box->dx;
+    box->y1-=box->dy;
+    return 1;
+  }
+
+  /* You might prefer to cache these values rather than calculate
+     them on every call */
+  while (border->width != 255)
+  {
+    if (border->width!=1)
+    {
+      box->x0+=border->width;
+      box->y0+=border->width;
+      box->x1-=border->width;
+      box->y1-=border->width;
+    }
+    else
+    {
+      box->x0+=box->dx;
+      box->y0+=box->dy;
+      box->x1-=box->dx;
+      box->y1-=box->dy;
+    }
+    border++;
+  }
+
+  return 1;
+}
