@@ -1,19 +1,23 @@
-# Makefile for WimpIconBorderExample
+# Makefile for IconBorderExample
 #
 
-COMPONENT  = WimpIconBorderExample
-TYPE       = aif
-INCLUDES   = 
-LIBS       = ${CLIB}
-CDEFINES   = -DTEST
-OBJS       = o.borders \
-             o.graphics \
-             o.testborders
+#
+# Program specific options:
+#
+COMPONENT  = IconBorderExample
+EXPORTS    = 
+LIBS       = 
+CDEFINES   = 
+OBJS       = \
+             oz.borders \
+             oz.veneer \
+             oz.graphics \
+             oz.header
 
-# (from Env:Makefiles.LibraryCommand)
-TARGET   = ${COMPONENT}
-INCLUDES = -IC:
-CLIB     = C:o.stubs
+# (from Env:Makefiles.CModule)
+RAM_MODULE = rm.${COMPONENT}
+INCLUDES   = -IC:
+CLIB         = C:o.stubs
 LD      = link
 CC      = cc
 CMHG    = cmunge
@@ -22,22 +26,30 @@ CMHGFLAGS   = ${THROWBACK} -p -DCMHG ${INCLUDES}
 CFLAGS      = ${THROWBACK} -c -depend !Depend -Wc -fa ${CDEFINES} ${INCLUDES}
 CFLAGS_ZM   = ${CFLAGS} -zM -zps1
 WFLAGS      = ~c~v
-LDFLAGS     = -aif
 
 #
-# Rule patterns
+# Rule patterns:
 #
-.SUFFIXES: .o .aif .util .s .c
-.c.o:;    ${CC} ${CFLAGS} -o $@ $<
-.aif.o:;  ${LD} ${LDFLAGS} -o $@ $<
-          ${SQUEEZE} $@
+.SUFFIXES: .o .oz .rm .aof .s .c .cmhg
+.c.o:;     ${CC} ${CFLAGS} -o $@ $<
+.c.oz:;    ${CC} ${CFLAGS_ZM} -o $@ $<
+.cmhg.oz:; ${CMHG} $(CMHGFLAGS) -o $@ $<
+.cmhg.h:;  ${CMHG} $(CMHGFLAGS) -d $@ $<
 
-# everything
-all: ${TYPE}.${TARGET}
-        @echo ${COMPONENT}: All built (Disc)
+ram: ${RAM_MODULE}
+        @echo ${COMPONENT}: Module built (RAM)
 
-${TYPE}.${TARGET}: ${OBJS} ${CLIB}
-          ${LD} -aif -o aif.${TARGET} ${OBJS} ${LIBS}
+clean: ${CLEANTARGET}
+        ${WIPE} o.* ${WFLAGS}
+        ${WIPE} oz.* ${WFLAGS}
+        ${WIPE} rm.* ${WFLAGS}
+        @echo ${COMPONENT}: cleaned
+
+${RAM_MODULE}: ${OBJS} ${CSTUBS} ${LIBS}
+        ${LD} -rmf ${LDFLAGS} -o $@ ${OBJS} ${CLIB} ${LIBS}
+
+# additional dependencies
+oz.veneer: h.header
 
 #---------------------------------------------------------------------------
 # Dynamic dependencies:

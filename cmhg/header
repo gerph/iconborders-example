@@ -2,9 +2,9 @@
 
 ; usually, we would include the global services file
 ;#include "riscos/services.h"
-; however, that is not distributed in this example, so we just define
-; the service we use here.
-#define Service_WimpRegisterFilters 0x86
+; however, that is not distributed in this example, so we include our
+; private version.
+#include "consts.h"
 
 #include "VersionNum"
 
@@ -47,4 +47,4 @@ generic-veneers: border_entry/border_handler
 ; The module service entry will be called to process services. You are
 ; strongly recommended to include the numbers of the services you wish to
 ; handle.
-service-call-handler: Mod_Service Service_WimpRegisterFilters
+service-call-handler: Mod_Service Service_FilterManagerInstalled

@@ -10,9 +10,10 @@
 #include "borders.h"
 #include "header.h"
 
-#define Service_FilterManagerInstalled    (0x87)
-#define Filter_RegisterIconBorderFilter   (0x4264C)
-#define Filter_DeRegisterIconBorderFilter (0x4264D)
+/* We don't use the global services file */
+/* #include "riscos/services.h" */
+/* Use a private constants file instead */
+#include "consts.h"
 
 static enum {
   s_idle,   /* We're waiting to register */
@@ -38,6 +39,12 @@ _kernel_oserror *Register_Filters(void *pw)
                                                "Example",
                                                border_entry, pw,
                                                (1<<5) | (1<<6));
+  /* When FilterManager registers filters, the address of the name
+     is remembered. Thus, it must be staic. Similarly, the name
+     must be at the same address when registered and deregistered -
+     we rely on the compiler to reuse these strings and so keep the
+     same address. The compiler is not required to do this, but for
+     this example, it suffices. */
   if (err)
   {
     State = s_idle;

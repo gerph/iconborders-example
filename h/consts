@@ -1,0 +1,5 @@
+
+#define Service_FilterManagerInstalled 0x87
+
+#define Filter_RegisterIconBorderFilter   (0x4264C)
+#define Filter_DeRegisterIconBorderFilter (0x4264D)
