@@ -5,6 +5,7 @@
 # Program specific options:
 #
 COMPONENT  = IconBorderExample
+CLEANTARGET = cleantarget
 EXPORTS    = 
 LIBS       = 
 CDEFINES   = 
@@ -18,10 +19,13 @@ OBJS       = \
 RAM_MODULE = rm.${COMPONENT}
 INCLUDES   = -IC:
 CLIB         = C:o.stubs
+# CLIB = C:o.stubsg
 LD      = link
 CC      = cc
+RM      = remove
 CMHG    = cmunge
 WIPE    = -wipe
+RM      = remove
 CMHGFLAGS   = ${THROWBACK} -p -DCMHG ${INCLUDES}
 CFLAGS      = ${THROWBACK} -c -depend !Depend -Wc -fa ${CDEFINES} ${INCLUDES}
 CFLAGS_ZM   = ${CFLAGS} -zM -zps1
@@ -43,10 +47,14 @@ clean: ${CLEANTARGET}
         ${WIPE} o.* ${WFLAGS}
         ${WIPE} oz.* ${WFLAGS}
         ${WIPE} rm.* ${WFLAGS}
+        ${RM} h.header
         @echo ${COMPONENT}: cleaned
 
-${RAM_MODULE}: ${OBJS} ${CSTUBS} ${LIBS}
+${RAM_MODULE}: ${OBJS} ${CLIB} ${LIBS}
         ${LD} -rmf ${LDFLAGS} -o $@ ${OBJS} ${CLIB} ${LIBS}
+
+cleantarget:
+       ${RM} h.header
 
 # additional dependencies
 oz.veneer: h.header
