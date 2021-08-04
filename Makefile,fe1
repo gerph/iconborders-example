@@ -18,24 +18,25 @@ OBJS       = \
 # (from Env:Makefiles.CModule)
 RAM_MODULE = rm.${COMPONENT}
 INCLUDES   = -IC:
-CLIB         = C:o.stubs
+CLIB         = C:o.stubsg
 # CLIB = C:o.stubsg
 LD      = link
 CC      = cc
 RM      = remove
+MKDIR   = cdir
 CMHG    = cmunge
 WIPE    = -wipe
-RM      = remove
-CMHGFLAGS   = ${THROWBACK} -p -DCMHG ${INCLUDES}
-CFLAGS      = ${THROWBACK} -c -depend !Depend -Wc -fa ${CDEFINES} ${INCLUDES}
-CFLAGS_ZM   = ${CFLAGS} -zM -zps1
+
+APCS        = -apcs 3/32
+CMHGFLAGS   = ${THROWBACK} ${APCS} -p -DCMHG ${INCLUDES}
+CFLAGS      = ${THROWBACK} ${APCS} -c -depend !Depend -Wc -fa ${CDEFINES} ${INCLUDES}
+CFLAGS_ZM   = ${CFLAGS} ${APCS} -zM -zps1
 WFLAGS      = ~c~v
 
 #
 # Rule patterns:
 #
 .SUFFIXES: .o .oz .rm .aof .s .c .cmhg
-.c.o:;     ${CC} ${CFLAGS} -o $@ $<
 .c.oz:;    ${CC} ${CFLAGS_ZM} -o $@ $<
 .cmhg.oz:; ${CMHG} $(CMHGFLAGS) -o $@ $<
 .cmhg.h:;  ${CMHG} $(CMHGFLAGS) -d $@ $<
@@ -52,6 +53,10 @@ clean: ${CLEANTARGET}
 
 ${RAM_MODULE}: ${OBJS} ${CLIB} ${LIBS}
         ${LD} -rmf ${LDFLAGS} -o $@ ${OBJS} ${CLIB} ${LIBS}
+
+.INIT:
+        ${MKDIR} oz
+        ${MKDIR} rm
 
 cleantarget:
        ${RM} h.header

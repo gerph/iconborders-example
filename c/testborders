@@ -7,19 +7,38 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "borders.h"
 #include "swis.h"
 
-#define HEIGHT 48*3
-#define WIDTH  128*3
+#define X0 128
+#define Y0 128
+#define HEIGHT 96
+#define WIDTH  128
+
+/* Standard heights of the icons for different border types */
+int heights[] = {
+    40,     // regular icon
+    52,     // raised (not recommended)
+    52,     // lowered (informationals)
+    52,     // ridge (group, not recommended)
+    52,     // channel (group)
+    52,     // action (pressable button)
+    52+16,  // default (pressable button)
+    52+16,  // writeable
+};
 
 /* Dithering flags */
 int dither = DITHER_BACKGROUND;
 
-int main(void)
+int main(int argc, char *argv[])
 {
   int i;
   int alt;
+  int wait_at_end = 1;
+
+  if (argc == 2 && strcmp(argv[1], "-quit")==0)
+    wait_at_end = 0;
 
   printf("Plotting...\n");
 
@@ -41,12 +60,12 @@ int main(void)
       cols[COLOUR_WELL]=(i==6) ? 0xBAEEEE00 : 0xDDDDDD00;
       cols[COLOUR_FACE]=0xFFFFFF00;
       cols[COLOUR_OPP] =(i==3 || i==4) ? 0xBABABA00 : 0x73737300;
-      box.x0=640 + alt*(WIDTH+32);
-      box.y0=128+(HEIGHT+32)*(i-1);
+      box.x0=X0 + alt*(WIDTH+32);
+      box.y0=Y0+(HEIGHT)*(i-1);
       box.x1=box.x0+WIDTH;
-      box.y1=box.y0+HEIGHT;
-      box.dx=1;
-      box.dy=1;
+      box.y1=box.y0+heights[i];
+      box.dx=2;
+      box.dy=2;
       box.dx_1=box.dx-1;
       box.dy_1=box.dy-1;
 
@@ -67,6 +86,8 @@ int main(void)
     }
   }
 
-  getc(stdin);
-  return 1;
+  if (wait_at_end)
+    getc(stdin);
+
+  return 0;
 }
