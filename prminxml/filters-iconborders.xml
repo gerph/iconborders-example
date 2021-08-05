@@ -114,7 +114,6 @@
     <item>
         <p>
         Call <reference type='entry' name='IconBorder_Draw'/> to render the border of the icon.
-        <fixme>Check that it is fill, then draw</fixme>
         </p>
     </item>
 
