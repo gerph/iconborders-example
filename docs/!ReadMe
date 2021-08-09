@@ -25,20 +25,20 @@ and default buttons) rendering with that provided by the main border code.
 
 Building the standalone
 -----------------------
-Running the !Mk script will compile and link the standalone border test
+Running `amu -f MakefileApp` will compile and link the standalone border test
 harness. The test hardness itself is c.testborders and may be modified to
 suit the particular test conditions the user requires. The default behaviour
 is to draw all 7 border variants and their 'selected' states. As this
 example only handles type 5 and 6 borders, only these will be rendered.
 
 Once built, the test absolute can be found in the aif directory. Running
-this test will display the border variants. 
+this test will display the border variants.
 
 
 Building the module
 -------------------
-Running the !MkMod script will compile and link the module icon border
-plugin. The code which provides the module veneers and interfaces can be
+Running the `amu` will compile and link the module icon border plugin.
+The code which provides the module veneers and interfaces can be
 found in c.veneer (and cmhg.header which provides the raw module veneer).
 The veneer code will need modifying if you wish to only register filters
 on a *Command or other trigger. The default behaviour is to register the

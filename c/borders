@@ -388,3 +388,21 @@ int border_size(int type, unsigned long flags, bbox_t *box)
 
   return 1;
 }
+
+/*************************************************** Gerph *********
+ Function:     border_state
+ Description:  Return the state of the border renderer
+ Parameters:   type = button type
+               flags = button flags
+               box-> the bounding box to use
+ Returns:      our state flags for rendering
+ ******************************************************************/
+unsigned long border_state(int type, unsigned long flags, bbox_t *box)
+{
+  /* We need to return state flags to indicate what sort of button we provide
+     in order that the Wimp can decide what to do about it. */
+
+  /* Because we don't actually do anything with highlighting or changing the
+     shape of the icon, we can just return no flags. */
+  return 0;
+}

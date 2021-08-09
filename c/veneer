@@ -21,6 +21,8 @@ static enum {
   s_dead    /* We cannot be exited because something went wrong */
 } State = s_idle;
 
+static const char *filtername = "Example";
+
 /*************************************************** Gerph *********
  Function:     Register_Filters
  Description:  Register our filters
@@ -36,7 +38,7 @@ _kernel_oserror *Register_Filters(void *pw)
      if the button type specified has a bit set. In our example, we only
      ever handle types 5 and 6 - actual pressable buttons. */
   err = _swix(Filter_RegisterIconBorderFilter, _INR(0,3),
-                                               "Example",
+                                               filtername,
                                                border_entry, pw,
                                                (1<<5) | (1<<6));
   /* When FilterManager registers filters, the address of the name
@@ -67,7 +69,7 @@ _kernel_oserror *Unregister_Filters(void *pw)
   {
     /* Restore to default */
     err = _swix(Filter_DeRegisterIconBorderFilter, _INR(0,2),
-                                                   "Example",
+                                                   filtername,
                                                    border_entry, pw);
     if (err)
     {
@@ -203,6 +205,17 @@ _kernel_oserror *border_handler(_kernel_swi_regs *r, void *pw)
         if (border_colour(bordertype,iconflags,box,cols,background))
           r->r[9]=-1; /* Claim */
         return NULL;
+      }
+      break;
+
+    case 4: /* State changes */
+      /* Note that we only claim this if we are the handler for this icon
+         type (rather than just an augmenter) */
+      {
+        int bordertype = r->r[0];
+        unsigned long iconflags = r->r[1];
+        bbox_t *box = (bbox_t *)r->r[2];
+        r->r[3] |= border_state(bordertype,iconflags,box);
       }
       break;
   }

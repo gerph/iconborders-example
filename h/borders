@@ -27,6 +27,11 @@ typedef unsigned long colours_t;
 #define DITHER_BACKGROUND (1<<0)
 #define DITHER_SPRITES    (1<<1)
 
+/* State flags in _state routine */
+#define STATE_CHANGESSHAPE  (1<<0)
+#define STATE_HIGHLIGHTABLE (1<<1)
+
+
 /*************************************************** Gerph *********
  Function:     border_draw
  Description:  Draw a border
@@ -75,5 +80,15 @@ int border_colour(int type, unsigned long flags, bbox_t *box,
  Returns:      1 if handled, 0 if not handled
  ******************************************************************/
 int border_size(int type, unsigned long flags, bbox_t *box);
+
+/*************************************************** Gerph *********
+ Function:     border_state
+ Description:  Return the state of the border renderer
+ Parameters:   type = button type
+               flags = button flags
+               box-> the bounding box to use
+ Returns:      our state flags for rendering
+ ******************************************************************/
+unsigned long border_state(int type, unsigned long flags, bbox_t *box);
 
 #endif
