@@ -1,4 +1,4 @@
-# Makefile for IconBorderExample
+# Makefile for IconBorderExample test
 #
 
 COMPONENT  = IconBorderExample

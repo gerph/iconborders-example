@@ -26,7 +26,6 @@ jobs:
       - amu -f Makefile ram
 
       # Run the test
-      - cdir Artifacts
       # MODE 28
       - echo <22><28>
       - aif.IconBorderExample -quit
